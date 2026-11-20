@@ -1,0 +1,2198 @@
+1.	Create a STUDENT table using range or hash partitioning based on the student marks or department. Perform DML operations such as INSERT, UPDATE and DELETE on the partitioned table. Retrieve and display records from each partition separately using suitable SQL queries. Explain the working of partition-wise data storage. 
+Ans : 
+CREATE DATABASE IF NOT EXISTS student_dbms;
+USE student_dbms;
+
+DROP TABLE IF EXISTS student;
+
+CREATE TABLE student (
+    roll_no INT,
+    student_name VARCHAR(50),
+    department VARCHAR(30),
+    city VARCHAR(30),
+    marks INT,
+    PRIMARY KEY (roll_no, marks)
+)
+PARTITION BY RANGE (marks) (
+    PARTITION p1 VALUES LESS THAN (40),
+    PARTITION p2 VALUES LESS THAN (70),
+    PARTITION p3 VALUES LESS THAN (MAXVALUE)
+);
+
+INSERT INTO student VALUES
+(1, 'Amit', 'IT', 'Pune', 35),
+(2, 'Riya', 'CS', 'Mumbai', 55),
+(3, 'Yash', 'IT', 'Nashik', 85),
+(4, 'Neha', 'ENTC', 'Pune', 25),
+(5, 'Raj', 'CS', 'Nagpur', 75),
+(6, 'Priya', 'IT', 'Pune', 45),
+(7, 'Om', 'CS', 'Mumbai', 92),
+(8, 'Sara', 'ENTC', 'Nashik', 30),
+(9, 'Karan', 'IT', 'Pune', 65),
+(10, 'Anu', 'CS', 'Nagpur', 88);
+
+SELECT * FROM student;
+
+SELECT * FROM student PARTITION (p1);
+SELECT * FROM student PARTITION (p2);
+SELECT * FROM student PARTITION (p3);
+
+UPDATE student
+SET marks = 60
+WHERE roll_no = 1;
+
+DELETE FROM student
+WHERE roll_no = 4;
+
+SELECT * FROM student;
+
+SELECT * FROM student PARTITION (p1);
+SELECT * FROM student PARTITION (p2);
+SELECT * FROM student PARTITION (p3);
+
+SELECT
+    PARTITION_NAME,
+    PARTITION_METHOD,
+    PARTITION_EXPRESSION
+FROM INFORMATION_SCHEMA.PARTITIONS
+WHERE TABLE_SCHEMA = 'student_dbms'
+AND TABLE_NAME = 'student';
+
+SELECT COUNT(*) AS total FROM student PARTITION (p1);
+SELECT COUNT(*) AS total FROM student PARTITION (p2);
+SELECT COUNT(*) AS total FROM student PARTITION (p3);
+
+EXPLAIN
+SELECT * FROM student
+WHERE marks < 40;
+
+
+2.	Explain distributed transactions with a simple bank money-transfer example. Describe the purpose of COMMIT and ROLLBACK and explain why transaction recovery is required.
+Ans : 
+CREATE DATABASE IF NOT EXISTS bank_dbms;
+USE bank_dbms;
+
+DROP TABLE IF EXISTS account;
+
+CREATE TABLE account (
+    acc_id INT PRIMARY KEY,
+    acc_name VARCHAR(50),
+    city VARCHAR(30),
+    balance DECIMAL(10,2) NOT NULL CHECK (balance >= 0),
+    acc_type VARCHAR(20)
+) ENGINE = InnoDB;
+
+INSERT INTO account VALUES
+(101, 'Amit', 'Pune', 10000, 'Savings'),
+(102, 'Riya', 'Mumbai', 15000, 'Savings'),
+(103, 'Yash', 'Nashik', 20000, 'Current'),
+(104, 'Neha', 'Pune', 12000, 'Savings'),
+(105, 'Raj', 'Nagpur', 25000, 'Current'),
+(106, 'Priya', 'Pune', 18000, 'Savings'),
+(107, 'Om', 'Mumbai', 30000, 'Current'),
+(108, 'Sara', 'Nashik', 14000, 'Savings'),
+(109, 'Karan', 'Pune', 22000, 'Savings'),
+(110, 'Anu', 'Nagpur', 16000, 'Current');
+
+SELECT * FROM account;
+
+START TRANSACTION;
+
+UPDATE account
+SET balance = balance - 2000
+WHERE acc_id = 101 AND balance >= 2000;
+
+UPDATE account
+SET balance = balance + 2000
+WHERE acc_id = 102;
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id IN (101, 102);
+
+COMMIT;
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id IN (101, 102);
+
+START TRANSACTION;
+
+UPDATE account
+SET balance = balance - 1000
+WHERE acc_id = 101 AND balance >= 1000;
+
+UPDATE account
+SET balance = balance + 1000
+WHERE acc_id = 102;
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id IN (101, 102);
+
+ROLLBACK;
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id IN (101, 102);
+3.	. Create a MongoDB database and suitable collections. Insert structured and unstructured JSON documents containing student details such as roll number, name, department, marks and address. Perform suitable insert and display operations to retrieve and view all JSON documents from the created collections.
+Ans : 
+use student_dbms
+
+db.student.drop()
+
+db.createCollection("student")
+
+db.student.insertMany([
+    {roll_no: 101, name: "Amit", department: "IT", marks: 85, address: "Pune"},
+    {roll_no: 102, name: "Riya", department: "CS", marks: 90, address: "Mumbai"},
+    {roll_no: 103, name: "Yash", department: "IT", marks: 75, address: "Nashik"},
+    {roll_no: 104, name: "Neha", department: "ENTC", marks: 65, address: "Pune"},
+    {roll_no: 105, name: "Raj", department: "CS", marks: 88, address: "Nagpur"},
+    {roll_no: 106, name: "Priya", department: "IT", marks: 92, address: "Pune"},
+    {roll_no: 107, name: "Om", department: "CS", marks: 78, address: "Mumbai"},
+    {roll_no: 108, name: "Sara", department: "ENTC", marks: 82, address: "Nashik"},
+    {roll_no: 109, name: "Karan", department: "IT", marks: 70, address: "Pune"},
+    {roll_no: 110, name: "Anu", department: "CS", marks: 95, address: "Nagpur"}
+])
+
+db.student.find().pretty()
+
+db.student.insertOne({
+    roll_no: 111,
+    name: "Meera",
+    department: "IT",
+    marks: 89,
+    address: {
+        city: "Pune",
+        state: "Maharashtra",
+        pincode: 411001
+    },
+    skills: ["Python", "MongoDB", "Java"],
+    notes: "Participates in coding competitions"
+})
+
+db.student.find({roll_no: 111}).pretty()
+
+db.student.find().pretty()
+
+db.student.countDocuments({})
+
+show collections
+4.	Explain the MapReduce process with a simple example of counting the number of students in each department. Also explain the basic features of Apache Cassandra and mention one application where it can be used.
+Ans : 
+use adbms_mapreduce
+
+db.students.insertMany([
+  { roll_no: 101, name: "Amit", department: "IT", marks: 85 },
+  { roll_no: 102, name: "Riya", department: "CS", marks: 90 },
+  { roll_no: 103, name: "Yash", department: "ENTC", marks: 75 },
+  { roll_no: 104, name: "Neha", department: "IT", marks: 88 },
+  { roll_no: 105, name: "Aditya", department: "CS", marks: 92 },
+  { roll_no: 106, name: "Pooja", department: "ENTC", marks: 80 },
+  { roll_no: 107, name: "Rahul", department: "IT", marks: 78 },
+  { roll_no: 108, name: "Sneha", department: "CS", marks: 86 },
+  { roll_no: 109, name: "Shree", department: "ENTC", marks: 72 },
+  { roll_no: 110, name: "Varsha", department: "IT", marks: 95 }
+])
+
+db.students.find()
+
+var mapFunction = function() {
+  emit(this.department, 1);
+};
+
+var reduceFunction = function(key, values) {
+  return Array.sum(values);
+};
+
+db.students.mapReduce(
+  mapFunction,
+  reduceFunction,
+  { out: "student_department_count" }
+);
+
+db.student_department_count.find();
+5.	Differentiate between Star Schema and Snowflake Schema with a suitable diagram or example. Write any four differences.
+6.	Consider a SALES table with columns Sale_ID, Product_Name, Quantity and Amount. Write SQL queries to (a) display all sales records, (b) calculate the total sales amount, and (c) display the total sales amount product-wise. Briefly explain the role of OLAP in analysing sales data.
+Ans : 
+CREATE DATABASE sales_dbms;
+USE sales_dbms;
+
+CREATE TABLE sales (
+    sale_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    quantity INT,
+    amount DECIMAL(10,2)
+);
+
+INSERT INTO sales VALUES
+(101, 'Mouse', 2, 1000),
+(102, 'Keyboard', 1, 800),
+(103, 'Monitor', 1, 10000),
+(104, 'Mouse', 3, 1500),
+(105, 'Keyboard', 2, 1600),
+(106, 'Laptop', 1, 55000),
+(107, 'Monitor', 2, 20000),
+(108, 'Mouse', 1, 500),
+(109, 'Laptop', 1, 60000),
+(110, 'Keyboard', 3, 2400);
+
+SELECT * FROM sales;
+
+SELECT SUM(amount) AS total_sales
+FROM sales;
+
+SELECT product_name, SUM(amount) AS total_sales
+FROM sales
+GROUP BY product_name;
+7.	.Explain the Star Schema with a suitable example of a college or supermarket database. Identify the fact table and any three dimension tables.
+Ans : 
+ 
+CREATE DATABASE IF NOT EXISTS supermarket_star;
+USE supermarket_star;
+
+DROP TABLE IF EXISTS sales_fact;
+DROP TABLE IF EXISTS product_dim;
+DROP TABLE IF EXISTS customer_dim;
+DROP TABLE IF EXISTS date_dim;
+
+CREATE TABLE product_dim (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    category VARCHAR(50)
+);
+
+CREATE TABLE customer_dim (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(50),
+    city VARCHAR(50)
+);
+
+CREATE TABLE date_dim (
+    date_id INT PRIMARY KEY,
+    full_date DATE,
+    month_name VARCHAR(20)
+);
+
+CREATE TABLE sales_fact (
+    sale_id INT PRIMARY KEY,
+    product_id INT,
+    customer_id INT,
+    date_id INT,
+    quantity INT,
+    amount DECIMAL(10,2),
+    FOREIGN KEY (product_id)
+        REFERENCES product_dim(product_id),
+    FOREIGN KEY (customer_id)
+        REFERENCES customer_dim(customer_id),
+    FOREIGN KEY (date_id)
+        REFERENCES date_dim(date_id)
+);
+
+INSERT INTO product_dim VALUES
+(101, 'Rice', 'Grocery'),
+(102, 'Milk', 'Dairy'),
+(103, 'Bread', 'Bakery'),
+(104, 'Sugar', 'Grocery'),
+(105, 'Butter', 'Dairy');
+
+INSERT INTO customer_dim VALUES
+(201, 'Amit', 'Pune'),
+(202, 'Riya', 'Mumbai'),
+(203, 'Neha', 'Nashik'),
+(204, 'Rahul', 'Pune'),
+(205, 'Sneha', 'Mumbai');
+
+INSERT INTO date_dim VALUES
+(301, '2026-11-01', 'November'),
+(302, '2026-11-02', 'November'),
+(303, '2026-11-03', 'November');
+
+INSERT INTO sales_fact VALUES
+(1, 101, 201, 301, 2, 1000),
+(2, 102, 202, 301, 3, 180),
+(3, 103, 203, 302, 2, 100),
+(4, 104, 204, 302, 1, 50),
+(5, 105, 205, 303, 2, 400),
+(6, 101, 202, 303, 1, 500),
+(7, 102, 203, 301, 2, 120),
+(8, 103, 204, 302, 3, 150),
+(9, 104, 205, 303, 2, 100),
+(10, 105, 201, 301, 1, 200);
+
+SELECT * FROM product_dim;
+SELECT * FROM customer_dim;
+SELECT * FROM date_dim;
+SELECT * FROM sales_fact;
+
+SELECT
+    p.product_name,
+    SUM(s.amount) AS total_sales
+FROM sales_fact s
+JOIN product_dim p
+    ON s.product_id = p.product_id
+GROUP BY p.product_id, p.product_name
+ORDER BY p.product_id;
+8.	.Write minimum 10 complex queries on MongoDB collections using various keywords and operators.
+Ans : 
+use adbms_group8
+
+db.students.insertMany([
+  {
+    roll_no: 101,
+    name: "Amit",
+    department: "IT",
+    age: 20,
+    marks: 85,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 102,
+    name: "Riya",
+    department: "CS",
+    age: 21,
+    marks: 92,
+    city: "Mumbai",
+    semester: 5
+  },
+  {
+    roll_no: 103,
+    name: "Yash",
+    department: "ENTC",
+    age: 19,
+    marks: 68,
+    city: "Nashik",
+    semester: 3
+  },
+  {
+    roll_no: 104,
+    name: "Neha",
+    department: "IT",
+    age: 20,
+    marks: 78,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 105,
+    name: "Aditya",
+    department: "CS",
+    age: 22,
+    marks: 95,
+    city: "Satara",
+    semester: 7
+  },
+  {
+    roll_no: 106,
+    name: "Pooja",
+    department: "ENTC",
+    age: 21,
+    marks: 72,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 107,
+    name: "Rahul",
+    department: "IT",
+    age: 19,
+    marks: 88,
+    city: "Mumbai",
+    semester: 3
+  },
+  {
+    roll_no: 108,
+    name: "Sneha",
+    department: "CS",
+    age: 20,
+    marks: 81,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 109,
+    name: "Shree",
+    department: "ENTC",
+    age: 22,
+    marks: 65,
+    city: "Nashik",
+    semester: 7
+  },
+  {
+    roll_no: 110,
+    name: "Varsha",
+    department: "IT",
+    age: 21,
+    marks: 90,
+    city: "Pune",
+    semester: 7
+  }
+])
+db.students.find()
+
+use adbms_group8
+
+db.students.find({ marks: { $gt: 80 } })
+
+db.students.find({ marks: { $lt: 75 } })
+
+db.students.find({ marks: { $gte: 85 } })
+
+db.students.find({ marks: { $lte: 78 } })
+
+db.students.find({ department: { $eq: "IT" } })
+
+db.students.find({ city: { $ne: "Pune" } })
+
+db.students.find({
+  department: { $in: ["IT", "CS"] }
+})
+
+db.students.find({
+  city: { $nin: ["Pune", "Mumbai"] }
+})
+
+db.students.find({
+  $and: [
+    { department: "IT" },
+    { marks: { $gt: 80 } }
+  ]
+})
+
+db.students.find({
+  $or: [
+    { marks: { $gt: 90 } },
+    { age: { $lt: 20 } }
+  ]
+})
+ 
+10.	Create an EMPLOYEE table using range or hash partitioning based on employee salary or department. Perform DML operations such as INSERT, UPDATE and DELETE on the partitioned table. Retrieve and display records from each partition separately using suitable SQL queries. Explain how records are stored in different partitions.
+Ans : 
+CREATE DATABASE IF NOT EXISTS employee_dbms;
+USE employee_dbms;
+
+DROP TABLE IF EXISTS employee;
+
+CREATE TABLE employee (
+    emp_id INT,
+    emp_name VARCHAR(50),
+    department VARCHAR(30),
+    city VARCHAR(30),
+    salary INT,
+    PRIMARY KEY (emp_id, salary)
+)
+PARTITION BY RANGE (salary) (
+    PARTITION p1 VALUES LESS THAN (30000),
+    PARTITION p2 VALUES LESS THAN (60000),
+    PARTITION p3 VALUES LESS THAN (MAXVALUE)
+);
+
+INSERT INTO employee VALUES
+(101, 'Amit', 'HR', 'Pune', 25000),
+(102, 'Riya', 'IT', 'Mumbai', 45000),
+(103, 'Yash', 'Sales', 'Nashik', 75000),
+(104, 'Neha', 'HR', 'Pune', 20000),
+(105, 'Raj', 'IT', 'Nagpur', 65000),
+(106, 'Priya', 'Sales', 'Pune', 35000),
+(107, 'Om', 'IT', 'Mumbai', 90000),
+(108, 'Sara', 'HR', 'Nashik', 28000),
+(109, 'Karan', 'Sales', 'Pune', 55000),
+(110, 'Anu', 'IT', 'Nagpur', 80000);
+
+SELECT * FROM employee;
+
+SELECT * FROM employee PARTITION (p1);
+SELECT * FROM employee PARTITION (p2);
+SELECT * FROM employee PARTITION (p3);
+
+UPDATE employee
+SET salary = 50000
+WHERE emp_id = 101;
+
+DELETE FROM employee
+WHERE emp_id = 104;
+
+SELECT * FROM employee;
+
+SELECT * FROM employee PARTITION (p1);
+SELECT * FROM employee PARTITION (p2);
+SELECT * FROM employee PARTITION (p3);
+
+SELECT
+    PARTITION_NAME,
+    PARTITION_METHOD,
+    PARTITION_EXPRESSION
+FROM INFORMATION_SCHEMA.PARTITIONS
+WHERE TABLE_SCHEMA = 'employee_dbms'
+AND TABLE_NAME = 'employee';
+
+SELECT COUNT(*) AS total FROM employee PARTITION (p1);
+SELECT COUNT(*) AS total FROM employee PARTITION (p2);
+SELECT COUNT(*) AS total FROM employee PARTITION (p3);
+
+EXPLAIN
+SELECT * FROM employee
+WHERE salary < 30000;
+11.	Explain distributed transactions with a simple online ticket-booking example. Describe how COMMIT and ROLLBACK maintain transaction consistency and explain the need for transaction recovery.
+Ans : 
+CREATE DATABASE IF NOT EXISTS ticket_dbms;
+USE ticket_dbms;
+
+DROP TABLE IF EXISTS booking;
+DROP TABLE IF EXISTS seat;
+
+CREATE TABLE seat (
+    seat_id INT PRIMARY KEY,
+    movie_name VARCHAR(50),
+    seat_no VARCHAR(10),
+    price DECIMAL(10,2),
+    status VARCHAR(20)
+) ENGINE = InnoDB;
+
+CREATE TABLE booking (
+    booking_id INT PRIMARY KEY,
+    seat_id INT,
+    customer_name VARCHAR(50),
+    amount DECIMAL(10,2),
+    status VARCHAR(20),
+    FOREIGN KEY (seat_id) REFERENCES seat(seat_id)
+) ENGINE = InnoDB;
+
+INSERT INTO seat VALUES
+(1, 'Movie A', 'A1', 200, 'Available'),
+(2, 'Movie A', 'A2', 200, 'Available'),
+(3, 'Movie A', 'A3', 200, 'Available'),
+(4, 'Movie A', 'A4', 200, 'Available'),
+(5, 'Movie A', 'A5', 200, 'Available'),
+(6, 'Movie A', 'B1', 250, 'Available'),
+(7, 'Movie A', 'B2', 250, 'Available'),
+(8, 'Movie A', 'B3', 250, 'Available'),
+(9, 'Movie A', 'B4', 250, 'Available'),
+(10, 'Movie A', 'B5', 250, 'Available');
+
+SELECT * FROM seat;
+SELECT * FROM booking;
+
+START TRANSACTION;
+
+UPDATE seat
+SET status = 'Booked'
+WHERE seat_id = 1 AND status = 'Available';
+
+INSERT INTO booking VALUES
+(101, 1, 'Amit', 200, 'Confirmed');
+
+COMMIT;
+
+SELECT * FROM seat WHERE seat_id = 1;
+SELECT * FROM booking;
+
+START TRANSACTION;
+
+UPDATE seat
+SET status = 'Booked'
+WHERE seat_id = 2 AND status = 'Available';
+
+INSERT INTO booking VALUES
+(102, 2, 'Riya', 200, 'Pending');
+
+SELECT * FROM seat WHERE seat_id = 2;
+SELECT * FROM booking WHERE booking_id = 102;
+
+ROLLBACK;
+
+SELECT * FROM seat WHERE seat_id = 2;
+SELECT * FROM booking;
+12.	Create a MongoDB database and suitable collections. Insert structured and unstructured JSON documents containing library details such as book ID, title, author, category, price and publisher information. Perform suitable insert and display operations to retrieve and view all documents from the created collections.
+Ans : 
+use library_dbms
+
+db.book.drop()
+
+db.createCollection("book")
+
+db.book.insertMany([
+    {book_id: 101, title: "Python Basics", author: "Amit Shah", category: "Programming", price: 500, publisher: "TechPress"},
+    {book_id: 102, title: "Java Guide", author: "Riya Mehta", category: "Programming", price: 600, publisher: "EduBooks"},
+    {book_id: 103, title: "DBMS Concepts", author: "Yash Patil", category: "Database", price: 450, publisher: "TechPress"},
+    {book_id: 104, title: "Data Science", author: "Neha Joshi", category: "Technology", price: 800, publisher: "LearnPub"},
+    {book_id: 105, title: "AI Fundamentals", author: "Raj Shah", category: "Technology", price: 900, publisher: "EduBooks"},
+    {book_id: 106, title: "Web Development", author: "Priya Rao", category: "Programming", price: 550, publisher: "TechPress"},
+    {book_id: 107, title: "Operating Systems", author: "Om Kulkarni", category: "Computer", price: 700, publisher: "LearnPub"},
+    {book_id: 108, title: "Computer Networks", author: "Sara Khan", category: "Computer", price: 650, publisher: "EduBooks"},
+    {book_id: 109, title: "Machine Learning", author: "Karan Jain", category: "Technology", price: 1000, publisher: "TechPress"},
+    {book_id: 110, title: "Cyber Security", author: "Anu Shah", category: "Computer", price: 750, publisher: "LearnPub"}
+])
+
+db.book.find().pretty()
+
+db.book.insertOne({
+    book_id: 111,
+    title: "Advanced MongoDB",
+    author: "Meera Shah",
+    category: "Database",
+    price: 850,
+    publisher: {
+        name: "TechPress",
+        city: "Pune",
+        year: 2026
+    },
+    formats: ["Paperback", "Ebook"],
+    description: "A practical guide to document databases"
+})
+
+db.book.find({book_id: 111}).pretty()
+
+db.book.find().pretty()
+
+db.book.countDocuments({})
+
+show collections
+13.	Explain the MapReduce process with a simple example of counting the number of books in each category. Also explain the important features of Apache Cassandra and mention one real-world application where it can be used.
+Ans : 
+use adbms_mapreduce
+
+db.books.insertMany([
+  { book_id: 101, title: "DBMS Basics", category: "Database", price: 500 },
+  { book_id: 102, title: "Python Guide", category: "Programming", price: 600 },
+  { book_id: 103, title: "Computer Networks", category: "Networking", price: 550 },
+  { book_id: 104, title: "Advanced SQL", category: "Database", price: 700 },
+  { book_id: 105, title: "Java Programming", category: "Programming", price: 650 },
+  { book_id: 106, title: "Network Security", category: "Networking", price: 800 },
+  { book_id: 107, title: "MongoDB Guide", category: "Database", price: 750 },
+  { book_id: 108, title: "C++ Programming", category: "Programming", price: 500 },
+  { book_id: 109, title: "Data Communication", category: "Networking", price: 600 },
+  { book_id: 110, title: "Data Warehousing", category: "Database", price: 850 }
+])
+
+db.books.find()
+
+var mapFunction = function() {
+  emit(this.category, 1);
+};
+
+var reduceFunction = function(key, values) {
+  return Array.sum(values);
+};
+
+db.books.mapReduce(
+  mapFunction,
+  reduceFunction,
+  { out: "book_category_count" }
+);
+
+db.book_category_count.find();
+14.	Compare Star Schema and Snowflake Schema with a suitable diagram or example. Explain any four differences between these two schemas.
+15.	Consider an ORDERS table with columns Order_ID, Product_Name, Customer_Name, Quantity and Total_Amount. Write SQL queries to (a) display all order records, (b) calculate the total order amount, and (c) display the total order amount product-wise. Briefly explain how OLAP helps in analysing order data.
+Ans : 
+CREATE DATABASE orders_dbms;
+USE orders_dbms;
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    customer_name VARCHAR(50),
+    quantity INT,
+    total_amount DECIMAL(10,2)
+);
+
+INSERT INTO orders VALUES
+(201, 'Laptop', 'Amit', 1, 50000),
+(202, 'Mouse', 'Riya', 2, 1000),
+(203, 'Keyboard', 'Yash', 1, 800),
+(204, 'Laptop', 'Neha', 1, 55000),
+(205, 'Mouse', 'Aditya', 3, 1500),
+(206, 'Monitor', 'Pooja', 1, 12000),
+(207, 'Keyboard', 'Rahul', 2, 1600),
+(208, 'Monitor', 'Sneha', 2, 24000),
+(209, 'Laptop', 'Shree', 1, 60000),
+(210, 'Mouse', 'Varsha', 1, 500);
+
+SELECT * FROM orders;
+
+SELECT SUM(total_amount) AS total_order_amount
+FROM orders;
+
+SELECT product_name, SUM(total_amount) AS product_total
+FROM orders
+GROUP BY product_name;
+16.	Explain the Star Schema with a suitable example of a library or hospital database. Identify the fact table and any three dimension tables.
+Ans : 
+ 
+CREATE DATABASE IF NOT EXISTS library_star;
+USE library_star;
+
+DROP TABLE IF EXISTS borrowing_fact;
+DROP TABLE IF EXISTS book_dim;
+DROP TABLE IF EXISTS member_dim;
+DROP TABLE IF EXISTS date_dim;
+
+CREATE TABLE book_dim (
+    book_id INT PRIMARY KEY,
+    book_title VARCHAR(100),
+    category VARCHAR(50)
+);
+
+CREATE TABLE member_dim (
+    member_id INT PRIMARY KEY,
+    member_name VARCHAR(50),
+    department VARCHAR(50)
+);
+
+CREATE TABLE date_dim (
+    date_id INT PRIMARY KEY,
+    full_date DATE,
+    month_name VARCHAR(20)
+);
+
+CREATE TABLE borrowing_fact (
+    borrow_id INT PRIMARY KEY,
+    book_id INT,
+    member_id INT,
+    date_id INT,
+    borrow_count INT,
+    FOREIGN KEY (book_id)
+        REFERENCES book_dim(book_id),
+    FOREIGN KEY (member_id)
+        REFERENCES member_dim(member_id),
+    FOREIGN KEY (date_id)
+        REFERENCES date_dim(date_id)
+);
+
+INSERT INTO book_dim VALUES
+(101, 'Database Systems', 'Database'),
+(102, 'Python Programming', 'Programming'),
+(103, 'Computer Networks', 'Networking'),
+(104, 'Java Programming', 'Programming'),
+(105, 'Machine Learning', 'AI');
+
+INSERT INTO member_dim VALUES
+(201, 'Amit', 'IT'),
+(202, 'Riya', 'CS'),
+(203, 'Neha', 'IT'),
+(204, 'Rahul', 'ENTC'),
+(205, 'Sneha', 'CS');
+
+INSERT INTO date_dim VALUES
+(301, '2026-11-01', 'November'),
+(302, '2026-11-02', 'November'),
+(303, '2026-11-03', 'November');
+
+INSERT INTO borrowing_fact VALUES
+(1, 101, 201, 301, 1),
+(2, 102, 202, 301, 1),
+(3, 101, 203, 302, 1),
+(4, 103, 204, 302, 1),
+(5, 104, 205, 303, 1),
+(6, 105, 201, 303, 1),
+(7, 102, 203, 301, 1),
+(8, 101, 202, 302, 1),
+(9, 103, 205, 303, 1),
+(10, 105, 204, 301, 1);
+
+SELECT * FROM book_dim;
+SELECT * FROM member_dim;
+SELECT * FROM date_dim;
+SELECT * FROM borrowing_fact;
+
+SELECT
+    b.book_title,
+    SUM(f.borrow_count) AS total_borrowings
+FROM borrowing_fact f
+JOIN book_dim b
+    ON f.book_id = b.book_id
+GROUP BY b.book_id, b.book_title
+ORDER BY b.book_id;
+17.	Write minimum 10 complex queries on MongoDB collections using different keywords, comparison operators and logical operators.
+Ans : 
+use adbms_group8
+
+db.students.insertMany([
+  {
+    roll_no: 101,
+    name: "Amit",
+    department: "IT",
+    age: 20,
+    marks: 85,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 102,
+    name: "Riya",
+    department: "CS",
+    age: 21,
+    marks: 92,
+    city: "Mumbai",
+    semester: 5
+  },
+  {
+    roll_no: 103,
+    name: "Yash",
+    department: "ENTC",
+    age: 19,
+    marks: 68,
+    city: "Nashik",
+    semester: 3
+  },
+  {
+    roll_no: 104,
+    name: "Neha",
+    department: "IT",
+    age: 20,
+    marks: 78,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 105,
+    name: "Aditya",
+    department: "CS",
+    age: 22,
+    marks: 95,
+    city: "Satara",
+    semester: 7
+  },
+  {
+    roll_no: 106,
+    name: "Pooja",
+    department: "ENTC",
+    age: 21,
+    marks: 72,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 107,
+    name: "Rahul",
+    department: "IT",
+    age: 19,
+    marks: 88,
+    city: "Mumbai",
+    semester: 3
+  },
+  {
+    roll_no: 108,
+    name: "Sneha",
+    department: "CS",
+    age: 20,
+    marks: 81,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 109,
+    name: "Shree",
+    department: "ENTC",
+    age: 22,
+    marks: 65,
+    city: "Nashik",
+    semester: 7
+  },
+  {
+    roll_no: 110,
+    name: "Varsha",
+    department: "IT",
+    age: 21,
+    marks: 90,
+    city: "Pune",
+    semester: 7
+  }
+])
+db.students.find()
+
+use adbms_group8
+
+db.students.find({
+  marks: { $gt: 75, $lt: 90 }
+})
+
+db.students.find({
+  age: { $gte: 20, $lte: 21 }
+})
+
+db.students.find({
+  $and: [
+    { department: "CS" },
+    { marks: { $gte: 80 } }
+  ]
+})
+
+db.students.find({
+  $or: [
+    { city: "Pune" },
+    { marks: { $gt: 90 } }
+  ]
+})
+
+db.students.find({
+  $nor: [
+    { department: "IT" },
+    { marks: { $lt: 75 } }
+  ]
+})
+
+db.students.find({
+  marks: { $not: { $gt: 85 } }
+})
+
+db.students.find({
+  $and: [
+    { department: { $in: ["IT", "CS"] } },
+    { age: { $lte: 20 } }
+  ]
+})
+
+db.students.find({
+  $or: [
+    { department: "ENTC" },
+    { semester: 7 }
+  ]
+})
+
+db.students.find({
+  $and: [
+    { city: { $ne: "Pune" } },
+    { marks: { $gte: 85 } }
+  ]
+})
+
+db.students.find({
+  $or: [
+    {
+      $and: [
+        { department: "IT" },
+        { marks: { $gt: 85 } }
+      ]
+    },
+    {
+      $and: [
+        { department: "CS" },
+        { marks: { $gt: 90 } }
+      ]
+    }
+  ]
+})
+ 
+19.	Create a PRODUCT table using range or hash partitioning based on product price or product category. Perform DML operations such as INSERT, UPDATE and DELETE on the partitioned table. Retrieve and display records from each partition separately using suitable SQL queries. Explain the advantages of partition-wise data retrieval.
+Ans : 
+CREATE DATABASE IF NOT EXISTS product_dbms;
+USE product_dbms;
+
+DROP TABLE IF EXISTS product;
+
+CREATE TABLE product (
+    product_id INT,
+    product_name VARCHAR(50),
+    category VARCHAR(30),
+    quantity INT,
+    price INT,
+    PRIMARY KEY (product_id, price)
+)
+PARTITION BY RANGE (price) (
+    PARTITION p1 VALUES LESS THAN (1000),
+    PARTITION p2 VALUES LESS THAN (5000),
+    PARTITION p3 VALUES LESS THAN (MAXVALUE)
+);
+
+INSERT INTO product VALUES
+(1, 'Mouse', 'Electronics', 10, 500),
+(2, 'Keyboard', 'Electronics', 15, 1500),
+(3, 'Monitor', 'Electronics', 5, 8000),
+(4, 'Notebook', 'Stationery', 50, 100),
+(5, 'Printer', 'Electronics', 4, 7000),
+(6, 'Pen', 'Stationery', 100, 20),
+(7, 'Headphones', 'Electronics', 20, 2500),
+(8, 'Laptop', 'Electronics', 3, 55000),
+(9, 'Bag', 'Accessories', 12, 1200),
+(10, 'Chair', 'Furniture', 8, 4500);
+
+SELECT * FROM product;
+
+SELECT * FROM product PARTITION (p1);
+SELECT * FROM product PARTITION (p2);
+SELECT * FROM product PARTITION (p3);
+
+UPDATE product
+SET price = 2000
+WHERE product_id = 1;
+
+DELETE FROM product
+WHERE product_id = 4;
+
+SELECT * FROM product;
+
+SELECT * FROM product PARTITION (p1);
+SELECT * FROM product PARTITION (p2);
+SELECT * FROM product PARTITION (p3);
+
+SELECT
+    PARTITION_NAME,
+    PARTITION_METHOD,
+    PARTITION_EXPRESSION
+FROM INFORMATION_SCHEMA.PARTITIONS
+WHERE TABLE_SCHEMA = 'product_dbms'
+AND TABLE_NAME = 'product';
+
+SELECT COUNT(*) AS total FROM product PARTITION (p1);
+SELECT COUNT(*) AS total FROM product PARTITION (p2);
+SELECT COUNT(*) AS total FROM product PARTITION (p3);
+
+EXPLAIN
+SELECT * FROM product
+WHERE price < 1000;
+20.	Explain distributed transactions with a simple online shopping example involving payment and order placement. Describe the role of COMMIT and ROLLBACK and explain how transaction recovery helps maintain database consistency.
+Ans : 
+CREATE DATABASE IF NOT EXISTS shopping_dbms;
+USE shopping_dbms;
+
+DROP TABLE IF EXISTS orders;
+DROP TABLE IF EXISTS product;
+
+CREATE TABLE product (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    category VARCHAR(30),
+    price DECIMAL(10,2),
+    stock INT NOT NULL CHECK (stock >= 0)
+) ENGINE = InnoDB;
+
+CREATE TABLE orders (
+    order_id INT PRIMARY KEY,
+    product_id INT,
+    customer_name VARCHAR(50),
+    amount DECIMAL(10,2),
+    payment_status VARCHAR(20),
+    FOREIGN KEY (product_id) REFERENCES product(product_id)
+) ENGINE = InnoDB;
+
+INSERT INTO product VALUES
+(1, 'Mouse', 'Electronics', 500, 20),
+(2, 'Keyboard', 'Electronics', 1500, 15),
+(3, 'Monitor', 'Electronics', 8000, 10),
+(4, 'Notebook', 'Stationery', 100, 50),
+(5, 'Printer', 'Electronics', 7000, 8),
+(6, 'Pen', 'Stationery', 20, 100),
+(7, 'Headphones', 'Electronics', 2500, 12),
+(8, 'Laptop', 'Electronics', 55000, 5),
+(9, 'Bag', 'Accessories', 1200, 18),
+(10, 'Chair', 'Furniture', 4500, 10);
+
+SELECT * FROM product;
+SELECT * FROM orders;
+
+START TRANSACTION;
+
+UPDATE product
+SET stock = stock - 1
+WHERE product_id = 1 AND stock >= 1;
+
+INSERT INTO orders VALUES
+(101, 1, 'Amit', 500, 'Paid');
+
+COMMIT;
+
+SELECT * FROM product WHERE product_id = 1;
+SELECT * FROM orders;
+
+START TRANSACTION;
+
+UPDATE product
+SET stock = stock - 1
+WHERE product_id = 2 AND stock >= 1;
+
+INSERT INTO orders VALUES
+(102, 2, 'Riya', 1500, 'Pending');
+
+SELECT * FROM product WHERE product_id = 2;
+SELECT * FROM orders WHERE order_id = 102;
+
+ROLLBACK;
+
+SELECT * FROM product WHERE product_id = 2;
+SELECT * FROM orders;
+21.	Create a MongoDB database and suitable collections. Insert structured and unstructured JSON documents containing employee details such as employee ID, name, designation, department, salary and contact information. Perform suitable insert and display operations to retrieve and view all JSON documents from the created collections.
+Ans : 
+use employee_dbms
+
+db.employee.drop()
+
+db.createCollection("employee")
+
+db.employee.insertMany([
+    {emp_id: 101, name: "Amit", designation: "Developer", department: "IT", salary: 45000, contact: "9876543210"},
+    {emp_id: 102, name: "Riya", designation: "Manager", department: "HR", salary: 60000, contact: "9876543211"},
+    {emp_id: 103, name: "Yash", designation: "Analyst", department: "Finance", salary: 50000, contact: "9876543212"},
+    {emp_id: 104, name: "Neha", designation: "Developer", department: "IT", salary: 48000, contact: "9876543213"},
+    {emp_id: 105, name: "Raj", designation: "Executive", department: "Sales", salary: 35000, contact: "9876543214"},
+    {emp_id: 106, name: "Priya", designation: "Manager", department: "IT", salary: 70000, contact: "9876543215"},
+    {emp_id: 107, name: "Om", designation: "Analyst", department: "Finance", salary: 52000, contact: "9876543216"},
+    {emp_id: 108, name: "Sara", designation: "Executive", department: "HR", salary: 38000, contact: "9876543217"},
+    {emp_id: 109, name: "Karan", designation: "Developer", department: "IT", salary: 55000, contact: "9876543218"},
+    {emp_id: 110, name: "Anu", designation: "Manager", department: "Sales", salary: 65000, contact: "9876543219"}
+])
+
+db.employee.find().pretty()
+
+db.employee.insertOne({
+    emp_id: 111,
+    name: "Meera",
+    designation: "Data Scientist",
+    department: "IT",
+    salary: 80000,
+    contact: {
+        phone: "9876543220",
+        email: "meera@example.com",
+        city: "Pune"
+    },
+    skills: ["Python", "MongoDB", "Machine Learning"],
+    remarks: "Works on data analytics projects"
+})
+
+db.employee.find({emp_id: 111}).pretty()
+
+db.employee.find().pretty()
+
+db.employee.countDocuments({})
+
+show collections
+22.	Explain the MapReduce process with a simple example of finding the total number of products in each category. Also explain the key features of Apache Cassandra and mention one suitable real-world application.
+Ans : 
+use adbms_mapreduce
+
+db.products.insertMany([
+  { product_id: 101, name: "Laptop", category: "Electronics", price: 55000 },
+  { product_id: 102, name: "Mouse", category: "Accessories", price: 500 },
+  { product_id: 103, name: "Keyboard", category: "Accessories", price: 800 },
+  { product_id: 104, name: "Monitor", category: "Electronics", price: 12000 },
+  { product_id: 105, name: "Chair", category: "Furniture", price: 3000 },
+  { product_id: 106, name: "Table", category: "Furniture", price: 5000 },
+  { product_id: 107, name: "Headphones", category: "Accessories", price: 1500 },
+  { product_id: 108, name: "Printer", category: "Electronics", price: 9000 },
+  { product_id: 109, name: "Bookshelf", category: "Furniture", price: 4500 },
+  { product_id: 110, name: "Webcam", category: "Accessories", price: 2000 }
+])
+
+db.products.find()
+
+var mapFunction = function() {
+  emit(this.category, 1);
+};
+
+var reduceFunction = function(key, values) {
+  return Array.sum(values);
+};
+
+db.products.mapReduce(
+  mapFunction,
+  reduceFunction,
+  { out: "product_category_count" }
+);
+
+db.product_category_count.find();
+23.	Differentiate between Star Schema and Snowflake Schema with a suitable example or diagram. Explain any four differences related to their structure, storage and query processing.
+24.	. Consider a STUDENT_RESULT table with columns Student_ID, Student_Name, Subject, Marks and Semester. Write SQL queries to (a) display all student result records, (b) calculate the average marks, and (c) display the average marks subject-wise. Briefly explain the role of OLAP in analysing academic performance data.
+Ans : 
+CREATE DATABASE student_result_dbms;
+USE student_result_dbms;
+
+CREATE TABLE student_result (
+    student_id INT,
+    student_name VARCHAR(50),
+    subject VARCHAR(50),
+    marks INT,
+    semester INT
+);
+
+INSERT INTO student_result VALUES
+(101, 'Amit', 'DBMS', 80, 5),
+(102, 'Riya', 'ML', 90, 5),
+(103, 'Yash', 'CN', 70, 5),
+(104, 'Neha', 'DBMS', 85, 5),
+(105, 'Aditya', 'ML', 95, 5),
+(106, 'Pooja', 'CN', 75, 5),
+(107, 'Rahul', 'DBMS', 90, 5),
+(108, 'Sneha', 'ML', 85, 5),
+(109, 'Shree', 'CN', 80, 5),
+(110, 'Varsha', 'DBMS', 95, 5);
+
+SELECT * FROM student_result;
+
+SELECT AVG(marks) AS average_marks
+FROM student_result;
+
+SELECT subject, AVG(marks) AS subject_average
+FROM student_result
+GROUP BY subject;
+25.	Explain the Star Schema with a suitable example of a sales or university database. Identify the fact table and any three dimension tables.
+Ans : 
+ 
+CREATE DATABASE IF NOT EXISTS university_star;
+USE university_star;
+
+DROP TABLE IF EXISTS performance_fact;
+DROP TABLE IF EXISTS student_dim;
+DROP TABLE IF EXISTS subject_dim;
+DROP TABLE IF EXISTS semester_dim;
+
+CREATE TABLE student_dim (
+    student_id INT PRIMARY KEY,
+    student_name VARCHAR(50),
+    department VARCHAR(50)
+);
+
+CREATE TABLE subject_dim (
+    subject_id INT PRIMARY KEY,
+    subject_name VARCHAR(50),
+    credits INT
+);
+
+CREATE TABLE semester_dim (
+    semester_id INT PRIMARY KEY,
+    semester_no INT,
+    academic_year VARCHAR(20)
+);
+
+CREATE TABLE performance_fact (
+    result_id INT PRIMARY KEY,
+    student_id INT,
+    subject_id INT,
+    semester_id INT,
+    marks INT,
+    FOREIGN KEY (student_id)
+        REFERENCES student_dim(student_id),
+    FOREIGN KEY (subject_id)
+        REFERENCES subject_dim(subject_id),
+    FOREIGN KEY (semester_id)
+        REFERENCES semester_dim(semester_id)
+);
+
+INSERT INTO student_dim VALUES
+(101, 'Amit', 'IT'),
+(102, 'Riya', 'CS'),
+(103, 'Neha', 'IT'),
+(104, 'Rahul', 'ENTC'),
+(105, 'Sneha', 'CS');
+
+INSERT INTO subject_dim VALUES
+(201, 'DBMS', 4),
+(202, 'Machine Learning', 4),
+(203, 'Computer Networks', 3);
+
+INSERT INTO semester_dim VALUES
+(301, 3, '2026-27'),
+(302, 5, '2026-27'),
+(303, 7, '2026-27');
+
+INSERT INTO performance_fact VALUES
+(1, 101, 201, 302, 85),
+(2, 102, 201, 302, 90),
+(3, 103, 202, 302, 78),
+(4, 104, 203, 301, 72),
+(5, 105, 202, 302, 95),
+(6, 101, 202, 302, 88),
+(7, 102, 203, 302, 80),
+(8, 103, 201, 302, 92),
+(9, 104, 201, 301, 75),
+(10, 105, 203, 302, 86);
+
+SELECT * FROM student_dim;
+SELECT * FROM subject_dim;
+SELECT * FROM semester_dim;
+SELECT * FROM performance_fact;
+
+SELECT
+    s.subject_name,
+    ROUND(AVG(p.marks), 2) AS average_marks
+FROM performance_fact p
+JOIN subject_dim s
+    ON p.subject_id = s.subject_id
+GROUP BY s.subject_id, s.subject_name
+ORDER BY s.subject_id;
+26.	Write minimum 10 complex queries on MongoDB collections using suitable query operators, projection, sorting and logical conditions.
+Ans : 
+use adbms_group8
+
+db.students.insertMany([
+  {
+    roll_no: 101,
+    name: "Amit",
+    department: "IT",
+    age: 20,
+    marks: 85,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 102,
+    name: "Riya",
+    department: "CS",
+    age: 21,
+    marks: 92,
+    city: "Mumbai",
+    semester: 5
+  },
+  {
+    roll_no: 103,
+    name: "Yash",
+    department: "ENTC",
+    age: 19,
+    marks: 68,
+    city: "Nashik",
+    semester: 3
+  },
+  {
+    roll_no: 104,
+    name: "Neha",
+    department: "IT",
+    age: 20,
+    marks: 78,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 105,
+    name: "Aditya",
+    department: "CS",
+    age: 22,
+    marks: 95,
+    city: "Satara",
+    semester: 7
+  },
+  {
+    roll_no: 106,
+    name: "Pooja",
+    department: "ENTC",
+    age: 21,
+    marks: 72,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 107,
+    name: "Rahul",
+    department: "IT",
+    age: 19,
+    marks: 88,
+    city: "Mumbai",
+    semester: 3
+  },
+  {
+    roll_no: 108,
+    name: "Sneha",
+    department: "CS",
+    age: 20,
+    marks: 81,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 109,
+    name: "Shree",
+    department: "ENTC",
+    age: 22,
+    marks: 65,
+    city: "Nashik",
+    semester: 7
+  },
+  {
+    roll_no: 110,
+    name: "Varsha",
+    department: "IT",
+    age: 21,
+    marks: 90,
+    city: "Pune",
+    semester: 7
+  }
+])
+db.students.find()
+
+use adbms_group8
+
+db.students.find(
+  { marks: { $gt: 80 } },
+  { _id: 0, name: 1, marks: 1 }
+)
+
+db.students.find(
+  { department: "IT" },
+  { _id: 0, name: 1, department: 1, city: 1 }
+)
+
+db.students.find(
+  { city: "Pune" },
+  { _id: 0, name: 1, marks: 1 }
+).sort({ marks: -1 })
+
+db.students.find(
+  { age: { $gte: 20 } },
+  { _id: 0, name: 1, age: 1 }
+).sort({ age: 1, roll_no: 1 })
+
+db.students.find(
+  { department: { $in: ["IT", "CS"] } },
+  { _id: 0, name: 1, department: 1, marks: 1 }
+).sort({ marks: -1 })
+
+db.students.find(
+  {
+    $and: [
+      { department: "IT" },
+      { marks: { $gte: 80 } }
+    ]
+  },
+  { _id: 0, name: 1, marks: 1 }
+)
+
+db.students.find(
+  {
+    $or: [
+      { city: "Mumbai" },
+      { semester: 7 }
+    ]
+  },
+  { _id: 0, name: 1, city: 1, semester: 1 }
+)
+
+db.students.find(
+  { marks: { $lt: 80 } },
+  { _id: 0, name: 1, marks: 1 }
+).sort({ marks: 1 })
+
+db.students.find(
+  { city: { $ne: "Pune" } },
+  { _id: 0, name: 1, city: 1, marks: 1 }
+).sort({ marks: -1 })
+
+db.students.find(
+  {
+    $and: [
+      { age: { $lte: 21 } },
+      { marks: { $gt: 80 } }
+    ]
+  },
+  { _id: 0, name: 1, age: 1, marks: 1 }
+).sort({ marks: -1 })
+ 
+28.	Create a CUSTOMER table using range or hash partitioning based on customer city or customer ID. Perform DML operations such as INSERT, UPDATE and DELETE on the partitioned table. Retrieve and display records from each partition separately using suitable SQL queries. Explain how partitioning improves data management.
+Ans : 
+CREATE DATABASE IF NOT EXISTS customer_dbms;
+USE customer_dbms;
+
+DROP TABLE IF EXISTS customer;
+
+CREATE TABLE customer (
+    cust_id INT PRIMARY KEY,
+    cust_name VARCHAR(50),
+    city VARCHAR(30),
+    phone VARCHAR(15),
+    age INT
+)
+PARTITION BY HASH (cust_id)
+PARTITIONS 3;
+
+INSERT INTO customer VALUES
+(101, 'Amit', 'Pune', '9876543210', 25),
+(102, 'Riya', 'Mumbai', '9876543211', 22),
+(103, 'Yash', 'Nashik', '9876543212', 28),
+(104, 'Neha', 'Pune', '9876543213', 24),
+(105, 'Raj', 'Mumbai', '9876543214', 30),
+(106, 'Priya', 'Nagpur', '9876543215', 26),
+(107, 'Om', 'Pune', '9876543216', 21),
+(108, 'Sara', 'Nashik', '9876543217', 29),
+(109, 'Karan', 'Mumbai', '9876543218', 27),
+(110, 'Anu', 'Pune', '9876543219', 23);
+
+SELECT * FROM customer;
+
+SELECT * FROM customer PARTITION (p0);
+SELECT * FROM customer PARTITION (p1);
+SELECT * FROM customer PARTITION (p2);
+
+UPDATE customer
+SET city = 'Nagpur'
+WHERE cust_id = 101;
+
+DELETE FROM customer
+WHERE cust_id = 104;
+
+SELECT * FROM customer;
+
+SELECT * FROM customer PARTITION (p0);
+SELECT * FROM customer PARTITION (p1);
+SELECT * FROM customer PARTITION (p2);
+
+SELECT
+    PARTITION_NAME,
+    PARTITION_METHOD,
+    PARTITION_EXPRESSION
+FROM INFORMATION_SCHEMA.PARTITIONS
+WHERE TABLE_SCHEMA = 'customer_dbms'
+AND TABLE_NAME = 'customer';
+
+SELECT COUNT(*) AS total FROM customer PARTITION (p0);
+SELECT COUNT(*) AS total FROM customer PARTITION (p1);
+SELECT COUNT(*) AS total FROM customer PARTITION (p2);
+
+EXPLAIN
+SELECT * FROM customer
+WHERE cust_id = 101;
+29.	. Explain distributed transactions with a simple ATM cash-withdrawal example involving account verification and balance update. Describe the purpose of COMMIT and ROLLBACK and explain the importance of transaction recovery.
+Ans : 
+CREATE DATABASE IF NOT EXISTS atm_dbms;
+USE atm_dbms;
+
+DROP TABLE IF EXISTS withdrawal;
+DROP TABLE IF EXISTS account;
+
+CREATE TABLE account (
+    acc_id INT PRIMARY KEY,
+    acc_name VARCHAR(50),
+    pin VARCHAR(10),
+    balance DECIMAL(10,2) NOT NULL CHECK (balance >= 0),
+    city VARCHAR(30)
+) ENGINE = InnoDB;
+
+CREATE TABLE withdrawal (
+    withdrawal_id INT PRIMARY KEY,
+    acc_id INT,
+    amount DECIMAL(10,2),
+    withdrawal_date DATE,
+    status VARCHAR(20),
+    FOREIGN KEY (acc_id) REFERENCES account(acc_id)
+) ENGINE = InnoDB;
+
+INSERT INTO account VALUES
+(101, 'Amit', '1234', 10000, 'Pune'),
+(102, 'Riya', '2345', 15000, 'Mumbai'),
+(103, 'Yash', '3456', 20000, 'Nashik'),
+(104, 'Neha', '4567', 12000, 'Pune'),
+(105, 'Raj', '5678', 25000, 'Nagpur'),
+(106, 'Priya', '6789', 18000, 'Pune'),
+(107, 'Om', '7890', 30000, 'Mumbai'),
+(108, 'Sara', '8901', 14000, 'Nashik'),
+(109, 'Karan', '9012', 22000, 'Pune'),
+(110, 'Anu', '1122', 16000, 'Nagpur');
+
+SELECT * FROM account;
+SELECT * FROM withdrawal;
+
+START TRANSACTION;
+
+UPDATE account
+SET balance = balance - 3000
+WHERE acc_id = 101 AND pin = '1234' AND balance >= 3000;
+
+INSERT INTO withdrawal VALUES
+(201, 101, 3000, CURRENT_DATE(), 'Success');
+
+COMMIT;
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id = 101;
+
+SELECT * FROM withdrawal;
+
+START TRANSACTION;
+
+UPDATE account
+SET balance = balance - 2000
+WHERE acc_id = 101 AND pin = '1234' AND balance >= 2000;
+
+INSERT INTO withdrawal VALUES
+(202, 101, 2000, CURRENT_DATE(), 'Pending');
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id = 101;
+
+SELECT * FROM withdrawal WHERE withdrawal_id = 202;
+
+ROLLBACK;
+
+SELECT acc_id, acc_name, balance
+FROM account
+WHERE acc_id = 101;
+
+SELECT * FROM withdrawal;
+30.	. Create a MongoDB database and suitable collections. Insert structured and unstructured JSON documents containing hospital details such as patient ID, patient name, age, department, doctor name and contact information. Perform suitable insert and display operations to retrieve and view all documents from the created collections.
+Ans : 
+use hospital_dbms
+
+db.patient.drop()
+
+db.createCollection("patient")
+
+db.patient.insertMany([
+    {patient_id: 101, name: "Amit", age: 25, department: "Cardiology", doctor: "Dr. Shah", contact: "9876543210"},
+    {patient_id: 102, name: "Riya", age: 30, department: "Neurology", doctor: "Dr. Mehta", contact: "9876543211"},
+    {patient_id: 103, name: "Yash", age: 40, department: "Orthopedic", doctor: "Dr. Patil", contact: "9876543212"},
+    {patient_id: 104, name: "Neha", age: 22, department: "Dermatology", doctor: "Dr. Joshi", contact: "9876543213"},
+    {patient_id: 105, name: "Raj", age: 50, department: "Cardiology", doctor: "Dr. Shah", contact: "9876543214"},
+    {patient_id: 106, name: "Priya", age: 35, department: "Neurology", doctor: "Dr. Mehta", contact: "9876543215"},
+    {patient_id: 107, name: "Om", age: 28, department: "Orthopedic", doctor: "Dr. Patil", contact: "9876543216"},
+    {patient_id: 108, name: "Sara", age: 45, department: "Dermatology", doctor: "Dr. Joshi", contact: "9876543217"},
+    {patient_id: 109, name: "Karan", age: 32, department: "Cardiology", doctor: "Dr. Shah", contact: "9876543218"},
+    {patient_id: 110, name: "Anu", age: 27, department: "Neurology", doctor: "Dr. Mehta", contact: "9876543219"}
+])
+
+db.patient.find().pretty()
+
+db.patient.insertOne({
+    patient_id: 111,
+    name: "Meera",
+    age: 29,
+    department: "Cardiology",
+    doctor: "Dr. Shah",
+    contact: {
+        phone: "9876543220",
+        city: "Pune",
+        emergency_contact: "9876543221"
+    },
+    symptoms: ["Chest pain", "Fatigue"],
+    medical_notes: "Patient advised to undergo further examination"
+})
+
+db.patient.find({patient_id: 111}).pretty()
+
+db.patient.find().pretty()
+
+db.patient.countDocuments({})
+
+show collections
+31.	Explain the MapReduce process with a simple example of calculating the number of patients in each hospital department. Also explain the basic features of Apache Cassandra and mention one application where it can be used.
+Ans : 
+use adbms_mapreduce
+
+db.patients.insertMany([
+  { patient_id: 101, name: "Amit", age: 45, department: "Cardiology" },
+  { patient_id: 102, name: "Riya", age: 28, department: "Neurology" },
+  { patient_id: 103, name: "Yash", age: 35, department: "Orthopedics" },
+  { patient_id: 104, name: "Neha", age: 50, department: "Cardiology" },
+  { patient_id: 105, name: "Aditya", age: 40, department: "Neurology" },
+  { patient_id: 106, name: "Pooja", age: 32, department: "Orthopedics" },
+  { patient_id: 107, name: "Rahul", age: 60, department: "Cardiology" },
+  { patient_id: 108, name: "Sneha", age: 25, department: "Neurology" },
+  { patient_id: 109, name: "Shree", age: 55, department: "Cardiology" },
+  { patient_id: 110, name: "Varsha", age: 38, department: "Orthopedics" }
+])
+
+db.patients.find()
+
+var mapFunction = function() {
+  emit(this.department, 1);
+};
+
+var reduceFunction = function(key, values) {
+  return Array.sum(values);
+};
+
+db.patients.mapReduce(
+  mapFunction,
+  reduceFunction,
+  { out: "patient_department_count" }
+);
+
+db.patient_department_count.find();
+32.	Explain Star Schema and Snowflake Schema with suitable diagrams or examples. Write any four differences between them based on dimension tables, redundancy, complexity and query performance.
+33.	Consider a STUDENT table with columns Roll_No, Student_Name, Department, City and Marks. Write SQL queries to (a) display all student records, (b) find the maximum marks, and (c) display the average marks department-wise. Briefly explain how OLAP supports multidimensional analysis of student data.
+Ans : 
+CREATE DATABASE student_dbms;
+USE student_dbms;
+
+CREATE TABLE student (
+    roll_no INT PRIMARY KEY,
+    student_name VARCHAR(50),
+    department VARCHAR(50),
+    city VARCHAR(50),
+    marks INT
+);
+
+INSERT INTO student VALUES
+(101, 'Amit', 'IT', 'Pune', 80),
+(102, 'Riya', 'CS', 'Mumbai', 90),
+(103, 'Yash', 'ENTC', 'Nashik', 70),
+(104, 'Neha', 'IT', 'Pune', 85),
+(105, 'Aditya', 'CS', 'Satara', 95),
+(106, 'Pooja', 'ENTC', 'Pune', 75),
+(107, 'Rahul', 'IT', 'Mumbai', 90),
+(108, 'Sneha', 'CS', 'Pune', 85),
+(109, 'Shree', 'ENTC', 'Nashik', 80),
+(110, 'Varsha', 'IT', 'Pune', 95);
+
+SELECT * FROM student;
+
+SELECT MAX(marks) AS maximum_marks
+FROM student;
+
+SELECT department, AVG(marks) AS average_marks
+FROM student
+GROUP BY department;
+34.	. Explain the Star Schema with a suitable example of an e-commerce or college database. Identify the fact table and any three dimension tables.
+Ans : 
+ 
+CREATE DATABASE IF NOT EXISTS ecommerce_star;
+USE ecommerce_star;
+
+DROP TABLE IF EXISTS order_fact;
+DROP TABLE IF EXISTS product_dim;
+DROP TABLE IF EXISTS customer_dim;
+DROP TABLE IF EXISTS date_dim;
+
+CREATE TABLE product_dim (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    category VARCHAR(50)
+);
+
+CREATE TABLE customer_dim (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(50),
+    city VARCHAR(50)
+);
+
+CREATE TABLE date_dim (
+    date_id INT PRIMARY KEY,
+    full_date DATE,
+    month_name VARCHAR(20)
+);
+
+CREATE TABLE order_fact (
+    order_line_id INT PRIMARY KEY,
+    product_id INT,
+    customer_id INT,
+    date_id INT,
+    quantity INT,
+    total_amount DECIMAL(10,2),
+    FOREIGN KEY (product_id)
+        REFERENCES product_dim(product_id),
+    FOREIGN KEY (customer_id)
+        REFERENCES customer_dim(customer_id),
+    FOREIGN KEY (date_id)
+        REFERENCES date_dim(date_id)
+);
+
+INSERT INTO product_dim VALUES
+(101, 'Laptop', 'Electronics'),
+(102, 'Mouse', 'Accessories'),
+(103, 'Keyboard', 'Accessories'),
+(104, 'Monitor', 'Electronics'),
+(105, 'Headphones', 'Accessories');
+
+INSERT INTO customer_dim VALUES
+(201, 'Amit', 'Pune'),
+(202, 'Riya', 'Mumbai'),
+(203, 'Neha', 'Nashik'),
+(204, 'Rahul', 'Pune'),
+(205, 'Sneha', 'Mumbai');
+
+INSERT INTO date_dim VALUES
+(301, '2026-11-01', 'November'),
+(302, '2026-11-02', 'November'),
+(303, '2026-11-03', 'November');
+
+INSERT INTO order_fact VALUES
+(1, 101, 201, 301, 1, 50000),
+(2, 102, 202, 301, 2, 1000),
+(3, 103, 203, 302, 1, 800),
+(4, 101, 204, 302, 1, 55000),
+(5, 104, 205, 303, 1, 12000),
+(6, 102, 201, 303, 3, 1500),
+(7, 105, 202, 301, 2, 3000),
+(8, 103, 203, 302, 2, 1600),
+(9, 104, 204, 303, 2, 24000),
+(10, 101, 205, 301, 1, 60000);
+
+SELECT * FROM product_dim;
+SELECT * FROM customer_dim;
+SELECT * FROM date_dim;
+SELECT * FROM order_fact;
+
+SELECT
+    p.product_name,
+    SUM(o.total_amount) AS total_revenue
+FROM order_fact o
+JOIN product_dim p
+    ON o.product_id = p.product_id
+GROUP BY p.product_id, p.product_name
+ORDER BY p.product_id;
+35.	Write minimum 10 complex queries on MongoDB collections using suitable operators and query conditions to retrieve, filter and sort documents.
+Ans : 
+use adbms_group8
+
+db.students.insertMany([
+  {
+    roll_no: 101,
+    name: "Amit",
+    department: "IT",
+    age: 20,
+    marks: 85,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 102,
+    name: "Riya",
+    department: "CS",
+    age: 21,
+    marks: 92,
+    city: "Mumbai",
+    semester: 5
+  },
+  {
+    roll_no: 103,
+    name: "Yash",
+    department: "ENTC",
+    age: 19,
+    marks: 68,
+    city: "Nashik",
+    semester: 3
+  },
+  {
+    roll_no: 104,
+    name: "Neha",
+    department: "IT",
+    age: 20,
+    marks: 78,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 105,
+    name: "Aditya",
+    department: "CS",
+    age: 22,
+    marks: 95,
+    city: "Satara",
+    semester: 7
+  },
+  {
+    roll_no: 106,
+    name: "Pooja",
+    department: "ENTC",
+    age: 21,
+    marks: 72,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 107,
+    name: "Rahul",
+    department: "IT",
+    age: 19,
+    marks: 88,
+    city: "Mumbai",
+    semester: 3
+  },
+  {
+    roll_no: 108,
+    name: "Sneha",
+    department: "CS",
+    age: 20,
+    marks: 81,
+    city: "Pune",
+    semester: 5
+  },
+  {
+    roll_no: 109,
+    name: "Shree",
+    department: "ENTC",
+    age: 22,
+    marks: 65,
+    city: "Nashik",
+    semester: 7
+  },
+  {
+    roll_no: 110,
+    name: "Varsha",
+    department: "IT",
+    age: 21,
+    marks: 90,
+    city: "Pune",
+    semester: 7
+  }
+])
+db.students.find()
+
+use adbms_group8
+
+db.students.find({
+  marks: { $gte: 80 }
+}).sort({ marks: -1 })
+
+db.students.find({
+  department: "IT"
+}).sort({ marks: -1 })
+
+db.students.find({
+  city: "Pune"
+}).sort({ age: 1, roll_no: 1 })
+
+db.students.find({
+  marks: { $gt: 70, $lt: 90 }
+}).sort({ marks: 1 })
+
+db.students.find({
+  department: { $in: ["CS", "ENTC"] }
+}).sort({ marks: -1 })
+
+db.students.find({
+  $and: [
+    { semester: 5 },
+    { marks: { $gte: 80 } }
+  ]
+}).sort({ marks: -1 })
+
+db.students.find({
+  $or: [
+    { city: "Mumbai" },
+    { city: "Nashik" }
+  ]
+}).sort({ marks: -1 })
+
+db.students.find({
+  age: { $lte: 20 }
+}).sort({ marks: -1 })
+
+db.students.find({
+  $nor: [
+    { department: "ENTC" },
+    { marks: { $lt: 80 } }
+  ]
+}).sort({ marks: -1 })
+
+db.students.find({
+  $and: [
+    { department: { $ne: "IT" } },
+    { marks: { $gte: 75 } }
+  ]
+}).sort({ marks: -1 })
+
+
+
+
+STAR SCHEMA AND SNOWFLAKE SCHEMA 
+Ans : STAR SCHEMA 
+
+CREATE DATABASE IF NOT EXISTS star_schema_db;
+USE star_schema_db;
+
+DROP TABLE IF EXISTS sales_fact;
+DROP TABLE IF EXISTS product_dim;
+DROP TABLE IF EXISTS customer_dim;
+DROP TABLE IF EXISTS date_dim;
+
+CREATE TABLE product_dim (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    category VARCHAR(50)
+);
+
+CREATE TABLE customer_dim (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(50),
+    city VARCHAR(50)
+);
+
+CREATE TABLE date_dim (
+    date_id INT PRIMARY KEY,
+    full_date DATE,
+    month_name VARCHAR(20),
+    year_no INT
+);
+
+CREATE TABLE sales_fact (
+    sale_id INT PRIMARY KEY,
+    product_id INT,
+    customer_id INT,
+    date_id INT,
+    quantity INT,
+    amount DECIMAL(10,2),
+    FOREIGN KEY (product_id)
+        REFERENCES product_dim(product_id),
+    FOREIGN KEY (customer_id)
+        REFERENCES customer_dim(customer_id),
+    FOREIGN KEY (date_id)
+        REFERENCES date_dim(date_id)
+);
+
+INSERT INTO product_dim VALUES
+(101, 'Laptop', 'Electronics'),
+(102, 'Mouse', 'Accessories'),
+(103, 'Keyboard', 'Accessories'),
+(104, 'Monitor', 'Electronics'),
+(105, 'Printer', 'Electronics');
+
+INSERT INTO customer_dim VALUES
+(201, 'Amit', 'Pune'),
+(202, 'Riya', 'Mumbai'),
+(203, 'Neha', 'Pune'),
+(204, 'Rahul', 'Nashik'),
+(205, 'Sneha', 'Mumbai');
+
+INSERT INTO date_dim VALUES
+(301, '2026-11-01', 'November', 2026),
+(302, '2026-11-02', 'November', 2026),
+(303, '2026-11-03', 'November', 2026);
+
+INSERT INTO sales_fact VALUES
+(1, 101, 201, 301, 1, 50000),
+(2, 102, 202, 301, 2, 1000),
+(3, 103, 203, 302, 1, 800),
+(4, 101, 204, 302, 1, 55000),
+(5, 104, 205, 303, 1, 12000),
+(6, 102, 201, 303, 3, 1500),
+(7, 105, 202, 301, 1, 9000),
+(8, 103, 203, 302, 2, 1600),
+(9, 104, 204, 303, 2, 24000),
+(10, 101, 205, 301, 1, 60000);
+
+SELECT * FROM product_dim;
+SELECT * FROM customer_dim;
+SELECT * FROM date_dim;
+SELECT * FROM sales_fact;
+
+SELECT
+    p.product_name,
+    SUM(s.amount) AS total_sales
+FROM sales_fact s
+JOIN product_dim p
+    ON s.product_id = p.product_id
+GROUP BY p.product_id, p.product_name
+ORDER BY p.product_id;
+
+SELECT SUM(amount) AS grand_total
+FROM sales_fact;
+
+
+
+
+SNOWFLAKE SCHEMA 
+
+CREATE DATABASE IF NOT EXISTS snowflake_schema_db;
+USE snowflake_schema_db;
+
+DROP TABLE IF EXISTS sales_fact;
+DROP TABLE IF EXISTS product_dim;
+DROP TABLE IF EXISTS customer_dim;
+DROP TABLE IF EXISTS date_dim;
+DROP TABLE IF EXISTS category_dim;
+DROP TABLE IF EXISTS city_dim;
+
+CREATE TABLE category_dim (
+    category_id INT PRIMARY KEY,
+    category_name VARCHAR(50)
+);
+
+CREATE TABLE city_dim (
+    city_id INT PRIMARY KEY,
+    city_name VARCHAR(50)
+);
+
+CREATE TABLE product_dim (
+    product_id INT PRIMARY KEY,
+    product_name VARCHAR(50),
+    category_id INT,
+    FOREIGN KEY (category_id)
+        REFERENCES category_dim(category_id)
+);
+
+CREATE TABLE customer_dim (
+    customer_id INT PRIMARY KEY,
+    customer_name VARCHAR(50),
+    city_id INT,
+    FOREIGN KEY (city_id)
+        REFERENCES city_dim(city_id)
+);
+
+CREATE TABLE date_dim (
+    date_id INT PRIMARY KEY,
+    full_date DATE,
+    month_name VARCHAR(20),
+    year_no INT
+);
+
+CREATE TABLE sales_fact (
+    sale_id INT PRIMARY KEY,
+    product_id INT,
+    customer_id INT,
+    date_id INT,
+    quantity INT,
+    amount DECIMAL(10,2),
+    FOREIGN KEY (product_id)
+        REFERENCES product_dim(product_id),
+    FOREIGN KEY (customer_id)
+        REFERENCES customer_dim(customer_id),
+    FOREIGN KEY (date_id)
+        REFERENCES date_dim(date_id)
+);
+
+INSERT INTO category_dim VALUES
+(1, 'Electronics'),
+(2, 'Accessories');
+
+INSERT INTO city_dim VALUES
+(1, 'Pune'),
+(2, 'Mumbai'),
+(3, 'Nashik');
+
+INSERT INTO product_dim VALUES
+(101, 'Laptop', 1),
+(102, 'Mouse', 2),
+(103, 'Keyboard', 2),
+(104, 'Monitor', 1),
+(105, 'Printer', 1);
+
+INSERT INTO customer_dim VALUES
+(201, 'Amit', 1),
+(202, 'Riya', 2),
+(203, 'Neha', 1),
+(204, 'Rahul', 3),
+(205, 'Sneha', 2);
+
+INSERT INTO date_dim VALUES
+(301, '2026-11-01', 'November', 2026),
+(302, '2026-11-02', 'November', 2026),
+(303, '2026-11-03', 'November', 2026);
+
+INSERT INTO sales_fact VALUES
+(1, 101, 201, 301, 1, 50000),
+(2, 102, 202, 301, 2, 1000),
+(3, 103, 203, 302, 1, 800),
+(4, 101, 204, 302, 1, 55000),
+(5, 104, 205, 303, 1, 12000),
+(6, 102, 201, 303, 3, 1500),
+(7, 105, 202, 301, 1, 9000),
+(8, 103, 203, 302, 2, 1600),
+(9, 104, 204, 303, 2, 24000),
+(10, 101, 205, 301, 1, 60000);
+
+SELECT * FROM category_dim;
+SELECT * FROM city_dim;
+SELECT * FROM product_dim;
+SELECT * FROM customer_dim;
+SELECT * FROM date_dim;
+SELECT * FROM sales_fact;
+
+SELECT
+    p.product_name,
+    c.category_name,
+    SUM(s.amount) AS total_sales
+FROM sales_fact s
+JOIN product_dim p
+    ON s.product_id = p.product_id
+JOIN category_dim c
+    ON p.category_id = c.category_id
+GROUP BY
+    p.product_id,
+    p.product_name,
+    c.category_name
+ORDER BY p.product_id;
+
+SELECT SUM(amount) AS grand_total
+FROM sales_fact;
+
+ 
